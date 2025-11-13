@@ -21,66 +21,60 @@ To write a PYTHON program for socket for HTTP for web page upload and download
 ```
 import socket
 
+
 def send_request(host, port, request):
-    # Create a socket connection to host:port
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         s.connect((host, port))
-        s.sendall(request.encode())  # send HTTP request
-        response = b""
-        while True:
-            part = s.recv(4096)
-            if not part:
-                break
-            response += part
-    return response.decode(errors="ignore")  # decode bytes to string
+        s.sendall(request.encode())
+        response = s.recv(4096).decode()
+    return response
+
 
 def upload_file(host, port, filename):
     with open(filename, 'rb') as file:
         file_data = file.read()
         content_length = len(file_data)
-        # Create a simple HTTP POST request
+
         request = (
-            f"POST / HTTP/1.1\r\n"
+            f"POST /upload HTTP/1.1\r\n"
             f"Host: {host}\r\n"
             f"Content-Length: {content_length}\r\n"
-            f"Connection: close\r\n"
+            f"Content-Type: text/plain\r\n"
             f"\r\n"
-            f"{file_data.decode(errors='ignore')}"
         )
-        response = send_request(host, port, request)
+        request = request + file_data.decode(errors='ignore')
+    
+    response = send_request(host, port, request)
     return response
+
 
 def download_file(host, port, filename):
-    # Simple HTTP GET request
-    request = f"GET / HTTP/1.1\r\nHost: {host}\r\nConnection: close\r\n\r\n"
+    request = f"GET /{filename} HTTP/1.1\r\nHost: {host}\r\n\r\n"
     response = send_request(host, port, request)
 
-    # Save the server's response to a file
-    with open(filename, 'w', encoding='utf-8') as file:
-        file.write(response)
-    return response
+    parts = response.split('\r\n\r\n', 1)
+    if len(parts) > 1:
+        file_content = parts[1]
+        with open('downloaded_' + filename, 'wb') as file:
+            file.write(file_content.encode())
+        print(f"{filename} downloaded successfully.")
+    else:
+        print("Error: No file content found in response.")
+
 
 if __name__ == "__main__":
-    host = 'httpbin.org'   # Safe testing site
-    port = 80
+    host = 'example.com'   # Replace with a real server or localhost
+    port = 80              # HTTP default port
 
-    # Create a sample file to upload
-    with open('example.txt', 'w') as f:
-        f.write("Socket upload test data")
-
-    print("Uploading file...\n")
+    # Upload file
     upload_response = upload_file(host, port, 'example.txt')
-    print("Upload Response:\n", upload_response)
+    print("Upload response:", upload_response)
 
-    print("\nDownloading page...\n")
-    download_response = download_file(host, port, 'downloaded_page.html')
-    print("Download Response:\n", download_response[:300], "...\n")
-    print("File 'downloaded_page.html' saved successfully.")
+    # Download file
+    download_file(host, port, 'example.txt')
 ```
 ## OUTPUT
-
-<img width="1011" height="508" alt="image" src="https://github.com/user-attachments/assets/a898249b-1670-42e9-a4af-a142611735cc" />
-
+<img width="1472" height="538" alt="Screenshot 2025-11-11 092629" src="https://github.com/user-attachments/assets/8d6e8223-1fb2-463e-b9c4-2ad96c83d908" />
 
 ## Result
 Thus the socket for HTTP for web page upload and download created and Executed
